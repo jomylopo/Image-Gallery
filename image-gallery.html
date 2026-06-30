@@ -465,7 +465,7 @@
         Image Gallery
       </div>
       <div class="nav-label">System</div>
-      <div class="nav-item" onclick="toast('Settings page coming soon.','info')">
+      <div class="nav-item" onclick="showSetupModal()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
         Settings
       </div>
@@ -637,20 +637,52 @@
   </div>
 </div>
 
+<!-- SETUP MODAL -->
+<div class="modal-backdrop" id="setup-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hd">
+      <h2 style="font-size:18px">Connect to Sanity</h2>
+      <button class="icon-btn" id="setup-close-btn" onclick="closeModal('setup-modal')" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:16px;padding-top:4px">
+      <div style="background:var(--warn-bg);border:1px solid rgba(240,160,32,.25);border-radius:var(--r-sm);padding:12px 14px;display:flex;gap:10px;align-items:flex-start">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--warn)" style="flex-shrink:0;margin-top:1px"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+        <div style="font-size:12px;color:var(--warn);line-height:1.65">
+          <strong>Step 1 — Add CORS origin in Sanity.</strong><br>
+          Go to <a href="https://sanity.io/manage" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline">sanity.io/manage</a> → Project <strong>6thfwh73</strong> → API → CORS Origins → Add <code style="background:rgba(240,160,32,.15);padding:1px 5px;border-radius:3px">https://image-gallery-oqc6.vercel.app</code> with <em>Allow credentials</em> checked.
+        </div>
+      </div>
+      <div class="fg">
+        <label class="flabel" for="token-input" style="margin-bottom:6px;display:block">Step 2 — Sanity API Token</label>
+        <input type="password" id="token-input" class="finput" placeholder="sks…" autocomplete="off">
+        <div style="font-size:11px;color:var(--text-3);margin-top:5px;line-height:1.5">Stored only in this browser's <code>localStorage</code> — never in code or sent anywhere except Sanity.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end">
+        <button class="btn btn-danger" id="setup-disconnect-btn" onclick="disconnectSanity()" style="display:none;margin-right:auto">Disconnect</button>
+        <button class="btn btn-primary" onclick="saveToken()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          Connect
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST CONTAINER -->
 <div id="toast-container"></div>
 
 <script>
 /* ────────────────────────────────────────────
-   CONFIG — Keep this file private.
-   Token grants write access to your Sanity project.
-   Never serve this file over a public URL.
+   CONFIG — Token is stored in localStorage, never in code.
+   Call showSetupModal() (Settings sidebar link) to update it.
    ──────────────────────────────────────────── */
 const CFG = {
   projectId:  '6thfwh73',
   dataset:    'production',
   apiVersion: '2021-06-07',
-  token:      'YOUR_SANITY_TOKEN_HERE'
+  token:      localStorage.getItem('sanity_token') || ''
 };
 const API = `https://${CFG.projectId}.api.sanity.io/v${CFG.apiVersion}`;
 
@@ -884,8 +916,11 @@ async function loadData() {
         <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
       </div>
       <div class="empty-title">Could not connect to Sanity</div>
-      <div class="empty-sub" style="max-width:320px">Check that <code style="color:var(--accent)">http://localhost:3000</code> is added to your Sanity CORS origins, then reload the page.</div>
-      <button class="btn btn-secondary" onclick="location.reload()" style="margin-top:8px">Retry</button>
+      <div class="empty-sub" style="max-width:380px">Check that your token is valid and that <code style="color:var(--accent)">https://image-gallery-oqc6.vercel.app</code> is in your Sanity CORS origins with <em>Allow credentials</em> enabled.</div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-primary" onclick="showSetupModal()">Update Token / Settings</button>
+        <button class="btn btn-secondary" onclick="location.reload()">Retry</button>
+      </div>
     </div>`;
     toast(`Connection failed: ${err.message}`, 'error', 8000);
   }
@@ -1254,7 +1289,7 @@ function wire() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeLightbox();
-      ['upload-modal','cats-modal','confirm-dlg'].forEach(closeModal);
+      ['upload-modal','cats-modal','confirm-dlg','setup-modal'].forEach(closeModal);
     }
     if (!e.target.matches('input,textarea,select')) {
       if (e.key === 'u') openUploadModal();
@@ -1266,8 +1301,39 @@ function wire() {
 /* ────────────────────────────────────────────
    INIT
    ──────────────────────────────────────────── */
+function showSetupModal() {
+  const hasToken = !!localStorage.getItem('sanity_token');
+  el('setup-close-btn').style.display      = hasToken ? '' : 'none';
+  el('setup-disconnect-btn').style.display = hasToken ? '' : 'none';
+  el('token-input').value = localStorage.getItem('sanity_token') || '';
+  openModal('setup-modal');
+}
+
+function saveToken() {
+  const token = el('token-input').value.trim();
+  if (!token) { toast('Please enter your Sanity API token.', 'warn'); return; }
+  localStorage.setItem('sanity_token', token);
+  CFG.token = token;
+  closeModal('setup-modal');
+  toast('Connected — loading gallery…', 'ok');
+  loadData();
+}
+
+function disconnectSanity() {
+  localStorage.removeItem('sanity_token');
+  CFG.token = '';
+  closeModal('setup-modal');
+  setTimeout(showSetupModal, 150);
+  toast('Disconnected from Sanity.', 'info');
+}
+
 async function init() {
   wire();
+  CFG.token = localStorage.getItem('sanity_token') || '';
+  if (!CFG.token) {
+    showSetupModal();
+    return;
+  }
   await loadData();
   /* offer to seed default categories if project is empty */
   if (!S.loading && S.categories.length === 0) {
