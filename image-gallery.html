@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Gallery — Bond Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ─── DESIGN TOKENS ─── */
+    :root {
+      --bg:          #0d0d10;
+      --surface:     #161619;
+      --raised:      #1e1e24;
+      --border:      rgba(255,255,255,0.07);
+      --border-hi:   rgba(255,255,255,0.14);
+      --accent:      #c9a96b;
+      --accent-h:    #d9be8e;
+      --accent-bg:   rgba(201,169,107,0.12);
+      --text-1:      #ededf0;
+      --text-2:      #8a8a9a;
+      --text-3:      #55555f;
+      --ok:          #3ecf7a;
+      --ok-bg:       rgba(62,207,122,0.12);
+      --warn:        #f0a020;
+      --warn-bg:     rgba(240,160,32,0.12);
+      --danger:      #e85555;
+      --danger-bg:   rgba(232,85,85,0.12);
+      --sidebar-w:   260px;
+      --toolbar-h:   64px;
+      --r:           10px;
+      --r-sm:        6px;
+      --r-lg:        14px;
+      --shadow:      0 2px 8px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+      --shadow-lg:   0 8px 32px rgba(0,0,0,.6),0 24px 64px rgba(0,0,0,.4);
+    }
+
+    /* ─── RESET ─── */
+    *,*::before,*::after { box-sizing:border-box;margin:0;padding:0; }
+    html,body { height:100%;overflow:hidden; }
+    body {
+      font-family:'Inter',system-ui,-apple-system,sans-serif;
+      background:var(--bg); color:var(--text-1);
+      font-size:14px; line-height:1.5;
+      -webkit-font-smoothing:antialiased;
+    }
+    button { cursor:pointer;font-family:inherit;border:none; }
+    input,textarea,select { font-family:inherit; }
+    img { max-width:100%;display:block; }
+    a { color:inherit;text-decoration:none; }
+    :focus-visible { outline:2px solid var(--accent);outline-offset:2px; }
+
+    /* ─── APP SHELL ─── */
+    #app { display:flex;height:100vh;overflow:hidden; }
+
+    /* ─── SIDEBAR ─── */
+    #sidebar {
+      width:var(--sidebar-w);min-width:var(--sidebar-w);
+      background:var(--surface);
+      border-right:1px solid var(--border);
+      display:flex;flex-direction:column;
+      overflow:hidden;z-index:10;
+    }
+    .sb-logo {
+      display:flex;align-items:center;gap:10px;
+      padding:20px 20px 18px;
+      border-bottom:1px solid var(--border);
+    }
+    .sb-mark {
+      width:32px;height:32px;
+      background:var(--accent);border-radius:8px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:13px;font-weight:800;color:#0d0d10;
+      letter-spacing:-0.5px;flex-shrink:0;
+    }
+    .sb-name { font-size:13px;font-weight:700;color:var(--text-1); }
+    .sb-sub  { font-size:10px;color:var(--text-3);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px; }
+
+    .sb-nav { flex:1;padding:12px 0;overflow-y:auto; }
+    .sb-nav::-webkit-scrollbar { width:4px; }
+    .sb-nav::-webkit-scrollbar-thumb { background:var(--border);border-radius:2px; }
+
+    .nav-label {
+      font-size:10px;font-weight:600;letter-spacing:1.5px;
+      text-transform:uppercase;color:var(--text-3);
+      padding:14px 20px 6px;
+    }
+    .nav-item {
+      display:flex;align-items:center;gap:10px;
+      padding:9px 20px;font-size:13px;font-weight:500;
+      color:var(--text-2);cursor:pointer;position:relative;
+      transition:color .15s,background .15s;
+    }
+    .nav-item:hover { color:var(--text-1);background:rgba(255,255,255,.04); }
+    .nav-item.active { color:var(--accent);background:var(--accent-bg); }
+    .nav-item.active::before {
+      content:'';position:absolute;left:0;top:4px;bottom:4px;
+      width:3px;background:var(--accent);border-radius:0 2px 2px 0;
+    }
+    .nav-item svg { flex-shrink:0;opacity:.7; }
+    .nav-item.active svg { opacity:1; }
+
+    .sb-footer {
+      padding:16px 20px;border-top:1px solid var(--border);
+    }
+    .sb-foot-label {
+      font-size:10px;font-weight:600;letter-spacing:1.5px;
+      text-transform:uppercase;color:var(--text-3);margin-bottom:8px;
+    }
+    .storage-bar { height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:6px; }
+    .storage-fill { height:100%;background:var(--accent);border-radius:2px;transition:width .4s;width:0; }
+    .storage-text { font-size:11px;color:var(--text-3); }
+
+    /* ─── MAIN ─── */
+    #main { flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0; }
+
+    /* ─── TOOLBAR ─── */
+    .toolbar {
+      height:var(--toolbar-h);display:flex;align-items:center;gap:10px;
+      padding:0 20px;border-bottom:1px solid var(--border);
+      background:var(--surface);flex-shrink:0;
+    }
+    .tb-left { display:flex;align-items:center;gap:10px; }
+    .breadcrumb { font-size:12px;color:var(--text-2);display:flex;align-items:center;gap:5px;white-space:nowrap; }
+    .bc-sep { opacity:.4; }
+    .bc-cur { color:var(--text-1);font-weight:500; }
+    .count-badge {
+      font-size:11px;font-weight:600;color:var(--text-3);
+      background:var(--raised);border:1px solid var(--border);
+      border-radius:20px;padding:2px 8px;white-space:nowrap;
+    }
+    .tb-search { flex:1;max-width:300px;position:relative; }
+    .tb-search svg { position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none; }
+    .search-input {
+      width:100%;height:36px;background:var(--bg);border:1px solid var(--border);
+      border-radius:var(--r-sm);color:var(--text-1);padding:0 12px 0 34px;
+      font-size:13px;outline:none;transition:border-color .15s;
+    }
+    .search-input::placeholder { color:var(--text-3); }
+    .search-input:focus { border-color:var(--accent); }
+    .tb-right { display:flex;align-items:center;gap:8px;margin-left:auto; }
+
+    /* ─── BUTTONS ─── */
+    .btn {
+      display:inline-flex;align-items:center;gap:6px;
+      height:36px;padding:0 14px;border-radius:var(--r-sm);
+      font-size:13px;font-weight:500;border:1px solid transparent;
+      transition:background .15s,color .15s,border-color .15s,transform .1s;
+      white-space:nowrap;cursor:pointer;
+    }
+    .btn:active { transform:scale(.97); }
+    .btn-primary  { background:var(--accent);color:#0d0d10;border-color:var(--accent);font-weight:600; }
+    .btn-primary:hover  { background:var(--accent-h);border-color:var(--accent-h); }
+    .btn-secondary { background:var(--raised);color:var(--text-1);border-color:var(--border); }
+    .btn-secondary:hover { border-color:var(--border-hi); }
+    .btn-ghost { background:transparent;color:var(--text-2);border:none; }
+    .btn-ghost:hover { color:var(--text-1);background:rgba(255,255,255,.05); }
+    .btn-danger { background:var(--danger-bg);color:var(--danger);border-color:rgba(232,85,85,.25); }
+    .btn-danger:hover { background:rgba(232,85,85,.22); }
+    .icon-btn {
+      width:32px;height:32px;padding:0;
+      display:inline-flex;align-items:center;justify-content:center;
+      border-radius:var(--r-sm);background:transparent;
+      border:1px solid var(--border);color:var(--text-2);cursor:pointer;
+      transition:background .15s,color .15s,border-color .15s;
+    }
+    .icon-btn:hover { background:var(--raised);color:var(--text-1);border-color:var(--border-hi); }
+
+    /* ─── DROPDOWN ─── */
+    .dropdown { position:relative; }
+    .dd-menu {
+      position:absolute;top:calc(100% + 6px);right:0;min-width:160px;
+      background:var(--raised);border:1px solid var(--border);
+      border-radius:var(--r);box-shadow:var(--shadow-lg);
+      z-index:50;padding:4px;display:none;
+    }
+    .dd-menu.open { display:block; }
+    .dd-item {
+      display:flex;align-items:center;gap:8px;
+      padding:8px 10px;font-size:13px;color:var(--text-2);
+      border-radius:var(--r-sm);cursor:pointer;
+      transition:background .12s,color .12s;
+      border:none;background:none;width:100%;text-align:left;
+    }
+    .dd-item:hover { background:rgba(255,255,255,.06);color:var(--text-1); }
+    .dd-item.active { color:var(--accent);background:var(--accent-bg); }
+
+    /* ─── GALLERY CANVAS ─── */
+    .g-canvas { flex:1;overflow-y:auto;padding:20px; }
+    .g-canvas::-webkit-scrollbar { width:6px; }
+    .g-canvas::-webkit-scrollbar-thumb { background:var(--border);border-radius:3px; }
+
+    /* ─── STATS STRIP ─── */
+    .stats-strip { display:flex;gap:12px;margin-bottom:20px; }
+    .stat-card { flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px; }
+    .stat-val { font-size:22px;font-weight:700;color:var(--text-1);line-height:1;font-variant-numeric:tabular-nums;margin-bottom:4px; }
+    .stat-lbl { font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-3); }
+
+    /* ─── CATEGORY PILLS ─── */
+    .pills-wrap { display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none; }
+    .pills-wrap::-webkit-scrollbar { display:none; }
+    .cat-pill {
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;
+      background:var(--surface);border:1px solid var(--border);color:var(--text-2);
+      cursor:pointer;white-space:nowrap;transition:background .15s,color .15s,border-color .15s;
+    }
+    .cat-pill:hover { border-color:var(--border-hi);color:var(--text-1); }
+    .cat-pill.active { background:var(--accent-bg);border-color:rgba(201,169,107,.35);color:var(--accent); }
+    .pill-n { font-size:10px;font-weight:700;background:rgba(255,255,255,.08);border-radius:10px;padding:1px 5px; }
+    .cat-pill.active .pill-n { background:rgba(201,169,107,.2); }
+
+    /* ─── MASONRY GRID ─── */
+    .g-grid { columns:4;column-gap:14px; }
+    @media(max-width:1200px) { .g-grid { columns:3; } }
+    @media(max-width:860px)  { .g-grid { columns:2; } }
+    @media(max-width:560px)  { .g-grid { columns:1; } }
+
+    /* ─── IMAGE CARD ─── */
+    .img-card {
+      break-inside:avoid;margin-bottom:14px;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--r);overflow:hidden;cursor:pointer;
+      transition:border-color .2s,transform .2s,box-shadow .2s;
+    }
+    .img-card:hover { border-color:var(--border-hi);transform:translateY(-2px);box-shadow:var(--shadow); }
+    .card-media { position:relative;overflow:hidden;background:var(--raised); }
+    .card-media img { width:100%;height:auto;display:block;transition:transform .3s; }
+    .img-card:hover .card-media img { transform:scale(1.025); }
+
+    .card-overlay {
+      position:absolute;inset:0;background:rgba(0,0,0,.72);
+      display:flex;align-items:center;justify-content:center;gap:8px;
+      opacity:0;transition:opacity .2s;
+    }
+    .img-card:hover .card-overlay { opacity:1; }
+    .ov-btn {
+      width:38px;height:38px;display:flex;align-items:center;justify-content:center;
+      border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+      color:#fff;transition:background .15s,transform .15s;cursor:pointer;
+    }
+    .ov-btn:hover { background:rgba(255,255,255,.25);transform:scale(1.1); }
+    .ov-btn.del:hover { background:rgba(232,85,85,.65); }
+
+    .card-foot { padding:10px 12px; }
+    .card-fname { font-size:12px;font-weight:500;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px; }
+    .card-meta  { display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
+    .cat-chip   { font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;background:var(--accent-bg);color:var(--accent);border-radius:4px;padding:2px 6px;white-space:nowrap; }
+    .meta-dim   { font-size:11px;color:var(--text-3);font-variant-numeric:tabular-nums; }
+    .meta-date  { font-size:11px;color:var(--text-3);margin-left:auto; }
+
+    /* ─── SKELETON ─── */
+    .skel-grid { columns:4;column-gap:14px; }
+    @media(max-width:1200px) { .skel-grid { columns:3; } }
+    @media(max-width:860px)  { .skel-grid { columns:2; } }
+    .skel-card { break-inside:avoid;margin-bottom:14px;border-radius:var(--r);overflow:hidden;background:var(--surface);border:1px solid var(--border); }
+    .skel-img  { background:var(--raised);animation:shimmer 1.6s infinite; }
+    .skel-foot { padding:10px 12px; }
+    .skel-line { height:10px;background:var(--raised);border-radius:4px;margin-bottom:6px;animation:shimmer 1.6s infinite; }
+    .skel-line.s { width:55%; }
+    @keyframes shimmer { 0%,100%{opacity:.5} 50%{opacity:1} }
+
+    /* ─── EMPTY STATE ─── */
+    .empty-state {
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      padding:80px 20px;text-align:center;
+    }
+    .empty-ico { width:64px;height:64px;background:var(--surface);border:1px solid var(--border);border-radius:16px;display:flex;align-items:center;justify-content:center;color:var(--text-3);margin-bottom:16px; }
+    .empty-title { font-size:16px;font-weight:600;color:var(--text-1);margin-bottom:6px; }
+    .empty-sub   { font-size:13px;color:var(--text-2);margin-bottom:20px;max-width:280px; }
+
+    /* ─── MODAL ─── */
+    .modal-backdrop {
+      position:fixed;inset:0;background:rgba(0,0,0,.8);
+      backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+      z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;
+      opacity:0;pointer-events:none;transition:opacity .2s;
+    }
+    .modal-backdrop.open { opacity:1;pointer-events:auto; }
+    .modal {
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--r-lg);width:100%;max-width:560px;
+      box-shadow:var(--shadow-lg);transform:translateY(8px);transition:transform .2s;
+      max-height:90vh;overflow:hidden;display:flex;flex-direction:column;
+    }
+    .modal-backdrop.open .modal { transform:translateY(0); }
+    .modal-hd {
+      display:flex;align-items:center;justify-content:space-between;
+      padding:18px 20px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+    }
+    .modal-hd h2 { font-size:16px;font-weight:600;color:var(--text-1); }
+    .modal-x {
+      width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+      border-radius:6px;background:transparent;border:1px solid transparent;
+      color:var(--text-2);font-size:18px;cursor:pointer;transition:background .12s,color .12s;
+    }
+    .modal-x:hover { background:var(--raised);color:var(--text-1); }
+    .modal-body { padding:20px;overflow-y:auto;flex:1; }
+    .modal-footer {
+      display:flex;align-items:center;justify-content:flex-end;gap:8px;
+      padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0;
+    }
+
+    /* ─── FORM FIELDS ─── */
+    .fg { margin-bottom:14px; }
+    .flabel {
+      display:block;font-size:11px;font-weight:600;letter-spacing:.8px;
+      text-transform:uppercase;color:var(--text-3);margin-bottom:6px;
+    }
+    .finput {
+      width:100%;height:36px;background:var(--bg);border:1px solid var(--border);
+      border-radius:var(--r-sm);color:var(--text-1);padding:0 12px;
+      font-size:13px;outline:none;transition:border-color .15s;
+    }
+    .finput:focus { border-color:var(--accent); }
+    .finput::placeholder { color:var(--text-3); }
+    .fselect {
+      width:100%;height:36px;background:var(--bg);border:1px solid var(--border);
+      border-radius:var(--r-sm);color:var(--text-1);padding:0 12px;
+      font-size:13px;outline:none;cursor:pointer;appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='%238a8a9a'%3E%3Cpath d='M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 10px center;padding-right:32px;
+    }
+    .fselect:focus { border-color:var(--accent); }
+
+    /* ─── UPLOAD ─── */
+    .drop-zone {
+      border:2px dashed var(--border);border-radius:var(--r);
+      padding:36px 20px;text-align:center;cursor:pointer;
+      transition:border-color .2s,background .2s;margin-bottom:16px;
+    }
+    .drop-zone.drag-over { border-color:var(--accent);background:var(--accent-bg); }
+    .dz-icon { color:var(--text-3);margin-bottom:12px; }
+    .drop-zone h3 { font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:6px; }
+    .drop-zone p  { font-size:13px;color:var(--text-2);margin-bottom:0; }
+    .dz-hint { font-size:11px;color:var(--text-3);margin-top:10px; }
+
+    .upload-queue { display:flex;flex-direction:column;gap:8px;margin-top:12px; }
+    .up-item { display:flex;align-items:center;gap:10px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px; }
+    .up-thumb { width:40px;height:40px;border-radius:6px;object-fit:cover;background:var(--bg);flex-shrink:0; }
+    .up-info  { flex:1;min-width:0; }
+    .up-name  { font-size:12px;font-weight:500;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px; }
+    .up-bar   { height:3px;background:var(--border);border-radius:2px;overflow:hidden; }
+    .up-fill  { height:100%;background:var(--accent);border-radius:2px;transition:width .3s; }
+    .up-status { font-size:12px;flex-shrink:0;white-space:nowrap; }
+    .up-status.ok  { color:var(--ok); }
+    .up-status.err { color:var(--danger); }
+    .up-status.ing { color:var(--text-3); }
+
+    /* ─── CATEGORIES TABLE ─── */
+    .cat-create-row { display:flex;gap:8px;margin-bottom:16px; }
+    .cat-create-row .finput { flex:1; }
+    .cat-table { border:1px solid var(--border);border-radius:var(--r);overflow:hidden; }
+    .cat-th {
+      display:grid;grid-template-columns:1fr 130px 70px 72px;
+      padding:10px 14px;background:var(--raised);border-bottom:1px solid var(--border);
+      font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text-3);
+    }
+    .cat-row {
+      display:grid;grid-template-columns:1fr 130px 70px 72px;
+      padding:11px 14px;align-items:center;border-bottom:1px solid var(--border);
+      transition:background .12s;
+    }
+    .cat-row:last-child { border-bottom:none; }
+    .cat-row:hover { background:rgba(255,255,255,.02); }
+    .cat-row-name { font-size:13px;font-weight:500;color:var(--text-1); }
+    .cat-row-slug { font-size:11px;color:var(--text-3);font-family:monospace; }
+    .cat-row-cnt  { font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums; }
+    .cat-row-acts { display:flex;gap:4px; }
+    .cat-edit-row {
+      display:grid;grid-template-columns:1fr 130px 70px 72px;
+      padding:8px 14px;align-items:center;gap:8px;
+      border-bottom:1px solid var(--border);background:var(--accent-bg);
+    }
+
+    /* ─── LIGHTBOX ─── */
+    #lightbox {
+      position:fixed;inset:0;background:rgba(0,0,0,.95);
+      z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      opacity:0;pointer-events:none;transition:opacity .2s;
+    }
+    #lightbox.open { opacity:1;pointer-events:auto; }
+    .lb-close {
+      position:absolute;top:16px;right:16px;width:40px;height:40px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+      border-radius:50%;color:#fff;cursor:pointer;transition:background .15s;z-index:5;
+    }
+    .lb-close:hover { background:rgba(255,255,255,.22); }
+    .lb-img-wrap { max-width:90vw;max-height:78vh;display:flex;align-items:center;justify-content:center; }
+    #lb-img { max-width:90vw;max-height:78vh;object-fit:contain;border-radius:var(--r);box-shadow:var(--shadow-lg); }
+    .lb-cap { margin-top:16px;text-align:center; }
+    .lb-fname { font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:4px; }
+    .lb-meta  { font-size:12px;color:var(--text-2);display:flex;align-items:center;justify-content:center;gap:14px; }
+    .lb-acts  { display:flex;gap:8px;justify-content:center;margin-top:12px; }
+
+    /* ─── CONFIRM DIALOG ─── */
+    .confirm-ico { width:48px;height:48px;background:var(--danger-bg);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--danger);margin:0 auto 14px; }
+    .confirm-msg { font-size:14px;color:var(--text-2);text-align:center;line-height:1.6; }
+
+    /* ─── TOASTS ─── */
+    #toast-container { position:fixed;bottom:20px;right:20px;z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none; }
+    .toast {
+      display:flex;align-items:center;gap:10px;padding:12px 14px;
+      background:var(--raised);border:1px solid var(--border);border-radius:var(--r);
+      box-shadow:var(--shadow);font-size:13px;color:var(--text-1);
+      min-width:240px;max-width:340px;pointer-events:auto;
+      animation:t-in .2s ease;
+    }
+    .toast.removing { animation:t-out .2s ease forwards; }
+    .toast-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+    .toast.success .toast-dot { background:var(--ok); }
+    .toast.error   .toast-dot { background:var(--danger); }
+    .toast.warn    .toast-dot { background:var(--warn); }
+    .toast.info    .toast-dot { background:var(--accent); }
+    .toast-msg { flex:1; }
+    .toast-x { background:none;border:none;color:var(--text-3);cursor:pointer;display:flex;align-items:center;flex-shrink:0;padding:0; }
+    .toast-x:hover { color:var(--text-1); }
+    @keyframes t-in  { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes t-out { from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(20px)} }
+
+    /* ─── WARN BANNER ─── */
+    .warn-banner {
+      background:var(--warn-bg);border:1px solid rgba(240,160,32,.25);
+      border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--warn);
+      display:flex;align-items:flex-start;gap:8px;margin-bottom:12px;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media(max-width:768px) {
+      #sidebar { display:none; }
+      .toolbar { padding:0 12px; }
+      .g-canvas { padding:12px; }
+      .stats-strip { gap:8px; }
+      .stat-card { padding:10px 12px; }
+      .stat-val { font-size:18px; }
+      .tb-search { max-width:160px; }
+      .tb-right .btn span { display:none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside id="sidebar">
+    <div class="sb-logo">
+      <div class="sb-mark">JB</div>
+      <div>
+        <div class="sb-name">Bond Admin</div>
+        <div class="sb-sub">Real Estate</div>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="nav-label">Main</div>
+      <div class="nav-item" onclick="toast('Dashboard not configured yet.','info')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-label">Content</div>
+      <div class="nav-item active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+        Image Gallery
+      </div>
+      <div class="nav-label">System</div>
+      <div class="nav-item" onclick="toast('Settings page coming soon.','info')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        Settings
+      </div>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-foot-label">Storage</div>
+      <div class="storage-bar"><div class="storage-fill" id="storage-fill"></div></div>
+      <div class="storage-text" id="storage-text">Loading…</div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <div id="main">
+    <div class="toolbar">
+      <div class="tb-left">
+        <div class="breadcrumb">
+          <span>Content</span>
+          <span class="bc-sep">›</span>
+          <span class="bc-cur">Image Gallery</span>
+        </div>
+        <span class="count-badge" id="img-count">Loading…</span>
+      </div>
+
+      <div class="tb-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+        <input type="search" id="search-input" class="search-input" placeholder="Search images…">
+      </div>
+
+      <div class="tb-right">
+        <div class="dropdown" id="sort-dd">
+          <button class="btn btn-secondary" onclick="toggleDD('sort-dd')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg>
+            <span id="sort-label">Newest</span>
+          </button>
+          <div class="dd-menu" id="sort-menu">
+            <button class="dd-item active" data-sort="newest">Newest First</button>
+            <button class="dd-item" data-sort="oldest">Oldest First</button>
+            <button class="dd-item" data-sort="az">Name A → Z</button>
+          </div>
+        </div>
+
+        <button class="btn btn-secondary" onclick="openCatsModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+          <span>Categories</span>
+        </button>
+
+        <button class="btn btn-primary" onclick="openUploadModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+          <span>Upload Images</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="g-canvas" id="g-canvas">
+      <div class="stats-strip">
+        <div class="stat-card"><div class="stat-val" id="st-total">—</div><div class="stat-lbl">Total Images</div></div>
+        <div class="stat-card"><div class="stat-val" id="st-storage">—</div><div class="stat-lbl">Storage Used</div></div>
+        <div class="stat-card"><div class="stat-val" id="st-cats">—</div><div class="stat-lbl">Categories</div></div>
+        <div class="stat-card"><div class="stat-val" id="st-recent">—</div><div class="stat-lbl">This Week</div></div>
+      </div>
+      <div class="pills-wrap" id="cat-pills"></div>
+      <div id="g-container"></div>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<!-- ═══════════════ UPLOAD MODAL ═══════════════ -->
+<div class="modal-backdrop" id="upload-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-hd">
+      <h2>Upload Images</h2>
+      <button class="modal-x" onclick="closeModal('upload-modal')" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="drop-zone" id="drop-zone">
+        <div class="dz-icon">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="currentColor" style="opacity:.35"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+        </div>
+        <h3>Drag &amp; drop images here</h3>
+        <p>or click to browse files</p>
+        <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/svg+xml,image/gif" multiple hidden>
+        <div class="dz-hint">JPG · PNG · WEBP · SVG · GIF &nbsp;·&nbsp; Max 50 MB each</div>
+      </div>
+
+      <div class="fg">
+        <label class="flabel">Upload to Category</label>
+        <select id="upload-cat" class="fselect">
+          <option value="">— No category —</option>
+        </select>
+      </div>
+
+      <div class="upload-queue" id="upload-queue"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('upload-modal')">Cancel</button>
+      <button class="btn btn-primary" id="done-btn" onclick="finishUpload()" disabled>Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ CATEGORIES MODAL ═══════════════ -->
+<div class="modal-backdrop" id="cats-modal">
+  <div class="modal" style="max-width:660px">
+    <div class="modal-hd">
+      <h2>Category Manager</h2>
+      <button class="modal-x" onclick="closeModal('cats-modal')" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="cat-create-row">
+        <input type="text" id="cat-name" class="finput" placeholder="Category name…" oninput="autoSlug(this)">
+        <input type="text" id="cat-slug" class="finput" placeholder="slug" style="width:150px">
+        <button class="btn btn-primary" onclick="createCat()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          Create
+        </button>
+      </div>
+      <div id="cats-table"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ LIGHTBOX ═══════════════ -->
+<div id="lightbox">
+  <button class="lb-close" onclick="closeLightbox()" aria-label="Close lightbox">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+  </button>
+  <div class="lb-img-wrap">
+    <img id="lb-img" src="" alt="">
+  </div>
+  <div class="lb-cap">
+    <div class="lb-fname" id="lb-name"></div>
+    <div class="lb-meta">
+      <span id="lb-cat"></span>
+      <span id="lb-dims"></span>
+      <span id="lb-date"></span>
+    </div>
+    <div class="lb-acts">
+      <a id="lb-dl" class="btn btn-secondary" download>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        Download
+      </a>
+      <button class="btn btn-danger" id="lb-del">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ CONFIRM DIALOG ═══════════════ -->
+<div class="modal-backdrop" id="confirm-dlg">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-body" style="padding:28px 24px;text-align:center">
+      <div class="confirm-ico">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+      </div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px" id="cdlg-title">Delete?</div>
+      <div class="confirm-msg" id="cdlg-msg"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('confirm-dlg')">Cancel</button>
+      <button class="btn btn-danger" id="cdlg-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<script>
+/* ────────────────────────────────────────────
+   CONFIG — Keep this file private.
+   Token grants write access to your Sanity project.
+   Never serve this file over a public URL.
+   ──────────────────────────────────────────── */
+const CFG = {
+  projectId:  '6thfwh73',
+  dataset:    'production',
+  apiVersion: '2021-06-07',
+  token:      'YOUR_SANITY_TOKEN_HERE'
+};
+const API = `https://${CFG.projectId}.api.sanity.io/v${CFG.apiVersion}`;
+
+/* ────────────────────────────────────────────
+   SANITY FETCH HELPERS
+   ──────────────────────────────────────────── */
+async function sQuery(groq) {
+  const r = await fetch(`${API}/data/query/${CFG.dataset}?query=${encodeURIComponent(groq)}`, {
+    headers: { Authorization: `Bearer ${CFG.token}` }
+  });
+  if (!r.ok) throw new Error(`Query ${r.status}: ${await r.text()}`);
+  return (await r.json()).result;
+}
+
+async function sMutate(mutations) {
+  const r = await fetch(`${API}/data/mutate/${CFG.dataset}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${CFG.token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mutations })
+  });
+  if (!r.ok) throw new Error(`Mutate ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
+async function sUploadAsset(file) {
+  const r = await fetch(
+    `${API}/assets/images/${CFG.dataset}?filename=${encodeURIComponent(file.name)}`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${CFG.token}`, 'Content-Type': file.type },
+      body: file
+    }
+  );
+  if (!r.ok) throw new Error(`Asset upload ${r.status}: ${await r.text()}`);
+  return (await r.json()).document;
+}
+
+/* ────────────────────────────────────────────
+   GROQ
+   ──────────────────────────────────────────── */
+const Q_IMAGES = `*[_type=="galleryImage"] | order(uploadedAt desc) {
+  _id, title, altText, uploadedAt,
+  "assetId": image.asset->_id,
+  "assetUrl": image.asset->url,
+  "width":  image.asset->metadata.dimensions.width,
+  "height": image.asset->metadata.dimensions.height,
+  "filesize": image.asset->size,
+  "mimeType": image.asset->mimeType,
+  "origName": image.asset->originalFilename,
+  "category": category->{ _id, name, "slug": slug.current }
+}`;
+
+const Q_CATS = `*[_type=="imageCategory"] | order(name asc) {
+  _id, name, "slug": slug.current,
+  "imageCount": count(*[_type=="galleryImage" && references(^._id)])
+}`;
+
+/* ────────────────────────────────────────────
+   STATE
+   ──────────────────────────────────────────── */
+const S = {
+  images:      [],
+  categories:  [],
+  filter:      { search: '', catId: null },
+  sort:        'newest',
+  loading:     true,
+  uploadDone:  false,
+};
+
+/* ────────────────────────────────────────────
+   UTILITIES
+   ──────────────────────────────────────────── */
+function fmtBytes(b) {
+  if (!b) return '0 B';
+  if (b < 1024)    return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
+  return (b/1073741824).toFixed(2) + ' GB';
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function slugify(s) {
+  return s.toLowerCase().trim().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function thumbUrl(img) {
+  if (!img.assetUrl) return '';
+  if (img.mimeType === 'image/svg+xml') return img.assetUrl;
+  return img.assetUrl + '?w=500&auto=format&q=80';
+}
+function filtered() {
+  let imgs = [...S.images];
+  if (S.filter.search) {
+    const q = S.filter.search.toLowerCase();
+    imgs = imgs.filter(i => (i.title||'').toLowerCase().includes(q) || (i.origName||'').toLowerCase().includes(q));
+  }
+  if (S.filter.catId) {
+    imgs = imgs.filter(i => i.category && i.category._id === S.filter.catId);
+  }
+  if (S.sort === 'oldest') imgs.sort((a,b) => new Date(a.uploadedAt) - new Date(b.uploadedAt));
+  if (S.sort === 'az')     imgs.sort((a,b) => (a.title||'').localeCompare(b.title||''));
+  return imgs;
+}
+
+/* ────────────────────────────────────────────
+   RENDER
+   ──────────────────────────────────────────── */
+function renderAll() {
+  renderStats();
+  renderPills();
+  renderGallery();
+}
+
+function renderStats() {
+  const total   = S.images.length;
+  const storage = S.images.reduce((s,i) => s+(i.filesize||0), 0);
+  const cats    = S.categories.length;
+  const week    = Date.now() - 7*86400000;
+  const recent  = S.images.filter(i => new Date(i.uploadedAt) > week).length;
+
+  el('st-total').textContent   = total;
+  el('st-storage').textContent = fmtBytes(storage);
+  el('st-cats').textContent    = cats;
+  el('st-recent').textContent  = recent;
+  el('img-count').textContent  = `${total} image${total!==1?'s':''}`;
+
+  const pct = Math.min(100,(storage/(500*1024*1024))*100);
+  el('storage-fill').style.width = pct.toFixed(1)+'%';
+  el('storage-text').textContent = `${fmtBytes(storage)} used`;
+}
+
+function renderPills() {
+  const active = S.filter.catId;
+  let h = `<button class="cat-pill${!active?' active':''}" onclick="setCatFilter(null)">
+    All <span class="pill-n">${S.images.length}</span>
+  </button>`;
+  S.categories.forEach(c => {
+    const n = S.images.filter(i => i.category && i.category._id === c._id).length;
+    h += `<button class="cat-pill${active===c._id?' active':''}" onclick="setCatFilter('${c._id}')">
+      ${esc(c.name)} <span class="pill-n">${n}</span>
+    </button>`;
+  });
+  el('cat-pills').innerHTML = h;
+}
+
+function renderGallery() {
+  const gc = el('g-container');
+  if (S.loading) { gc.innerHTML = skeletons(8); return; }
+  const imgs = filtered();
+  if (!imgs.length) { gc.innerHTML = emptyState(); return; }
+  gc.className = 'g-grid';
+  gc.innerHTML = imgs.map(i => card(i)).join('');
+}
+
+function card(img) {
+  const cat  = img.category ? img.category.name : '';
+  const tb   = thumbUrl(img);
+  const dims = img.width && img.height ? `${img.width}×${img.height}` : '';
+  const name = esc(img.title || img.origName || 'Untitled');
+  const safeId = esc(img._id);
+  const safeTitle = esc(img.title || img.origName || 'this image');
+
+  return `<div class="img-card" data-id="${safeId}">
+    <div class="card-media">
+      <img src="${esc(tb)}" alt="${esc(img.altText||img.title||'')}" loading="lazy">
+      <div class="card-overlay">
+        <button class="ov-btn" onclick="event.stopPropagation();openLightbox('${safeId}')" title="Preview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        </button>
+        <a class="ov-btn" href="${esc(img.assetUrl||'')}" download="${name}" onclick="event.stopPropagation()" title="Download">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </a>
+        <button class="ov-btn del" onclick="event.stopPropagation();confirmDel('${safeId}','${safeTitle}')" title="Delete">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="card-foot">
+      <div class="card-fname" title="${name}">${name}</div>
+      <div class="card-meta">
+        ${cat ? `<span class="cat-chip">${esc(cat)}</span>` : ''}
+        ${dims ? `<span class="meta-dim">${dims}</span>` : ''}
+        <span class="meta-date">${fmtDate(img.uploadedAt)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function skeletons(n) {
+  const hs = [180,240,155,300,195,220,270,185];
+  let h = '<div class="skel-grid">';
+  for (let i=0;i<n;i++) h += `<div class="skel-card"><div class="skel-img" style="height:${hs[i%hs.length]}px"></div><div class="skel-foot"><div class="skel-line"></div><div class="skel-line s"></div></div></div>`;
+  return h + '</div>';
+}
+
+function emptyState() {
+  const hasF = S.filter.search || S.filter.catId;
+  return `<div class="empty-state">
+    <div class="empty-ico">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+    </div>
+    <div class="empty-title">${hasF ? 'No images match your search' : 'No images yet'}</div>
+    <div class="empty-sub">${hasF ? 'Try a different term or select another category.' : 'Upload your first image to get started.'}</div>
+    ${!hasF ? `<button class="btn btn-primary" onclick="openUploadModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+      Upload Images
+    </button>` : ''}
+  </div>`;
+}
+
+/* ────────────────────────────────────────────
+   DATA LOADING
+   ──────────────────────────────────────────── */
+async function loadData() {
+  S.loading = true;
+  renderGallery();
+  try {
+    const [imgs, cats] = await Promise.all([ sQuery(Q_IMAGES), sQuery(Q_CATS) ]);
+    S.images     = imgs || [];
+    S.categories = cats || [];
+    S.loading    = false;
+    renderAll();
+  } catch (err) {
+    S.loading = false;
+    el('g-container').innerHTML = `<div class="empty-state">
+      <div class="empty-ico" style="background:var(--danger-bg);color:var(--danger)">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+      </div>
+      <div class="empty-title">Could not connect to Sanity</div>
+      <div class="empty-sub" style="max-width:320px">Check that <code style="color:var(--accent)">http://localhost:3000</code> is added to your Sanity CORS origins, then reload the page.</div>
+      <button class="btn btn-secondary" onclick="location.reload()" style="margin-top:8px">Retry</button>
+    </div>`;
+    toast(`Connection failed: ${err.message}`, 'error', 8000);
+  }
+}
+
+/* ────────────────────────────────────────────
+   FILTERS & SORT
+   ──────────────────────────────────────────── */
+function setCatFilter(id) {
+  S.filter.catId = id;
+  renderPills();
+  renderGallery();
+}
+
+function setSort(v) {
+  S.sort = v;
+  const labels = { newest:'Newest', oldest:'Oldest', az:'Name A–Z' };
+  el('sort-label').textContent = labels[v] || v;
+  document.querySelectorAll('#sort-menu .dd-item').forEach(b => b.classList.toggle('active', b.dataset.sort === v));
+  closeAllDD();
+  renderGallery();
+}
+
+/* ────────────────────────────────────────────
+   DROPDOWNS
+   ──────────────────────────────────────────── */
+function toggleDD(id) {
+  const m = document.querySelector(`#${id} .dd-menu`);
+  if (!m) return;
+  const wasOpen = m.classList.contains('open');
+  closeAllDD();
+  if (!wasOpen) m.classList.add('open');
+}
+function closeAllDD() {
+  document.querySelectorAll('.dd-menu.open').forEach(m => m.classList.remove('open'));
+}
+
+/* ────────────────────────────────────────────
+   MODALS
+   ──────────────────────────────────────────── */
+function openModal(id) {
+  el(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  el(id).classList.remove('open');
+  if (!document.querySelector('.modal-backdrop.open')) document.body.style.overflow = '';
+}
+
+/* ────────────────────────────────────────────
+   UPLOAD MODAL
+   ──────────────────────────────────────────── */
+function openUploadModal() {
+  S.uploadDone = false;
+  el('upload-queue').innerHTML = '';
+  el('done-btn').disabled = true;
+  el('drop-zone').classList.remove('drag-over');
+  const sel = el('upload-cat');
+  sel.innerHTML = '<option value="">— No category —</option>' +
+    S.categories.map(c => `<option value="${c._id}">${esc(c.name)}</option>`).join('');
+  openModal('upload-modal');
+}
+
+function finishUpload() {
+  closeModal('upload-modal');
+  if (S.uploadDone) loadData();
+}
+
+async function handleFiles(files) {
+  const ok = ['image/jpeg','image/png','image/webp','image/svg+xml','image/gif'];
+  const valid = Array.from(files).filter(f => {
+    if (!ok.includes(f.type))      { toast(`"${f.name}" — unsupported format.`, 'warn'); return false; }
+    if (f.size > 50*1024*1024)     { toast(`"${f.name}" — exceeds 50 MB.`, 'warn'); return false; }
+    return true;
+  });
+  if (!valid.length) return;
+  el('done-btn').disabled = true;
+  for (const f of valid) await uploadFile(f);
+  el('done-btn').disabled = false;
+  S.uploadDone = true;
+}
+
+async function uploadFile(file) {
+  const uid  = 'up_' + Math.random().toString(36).slice(2);
+  const prev = URL.createObjectURL(file);
+  const q    = el('upload-queue');
+  const item = document.createElement('div');
+  item.className = 'up-item'; item.id = uid;
+  item.innerHTML = `
+    <img class="up-thumb" src="${esc(prev)}" alt="">
+    <div class="up-info">
+      <div class="up-name">${esc(file.name)}</div>
+      <div class="up-bar"><div class="up-fill" id="${uid}-fill" style="width:0%"></div></div>
+    </div>
+    <div class="up-status ing" id="${uid}-st">Uploading…</div>`;
+  q.appendChild(item);
+  q.scrollTop = q.scrollHeight;
+
+  const fill   = el(uid+'-fill');
+  const status = el(uid+'-st');
+  let pct = 0;
+  const ticker = setInterval(() => { pct = Math.min(pct + Math.random()*14, 88); fill.style.width = pct+'%'; }, 200);
+
+  try {
+    const asset = await sUploadAsset(file);
+    const catId = el('upload-cat').value;
+    const doc = {
+      _type:      'galleryImage',
+      title:      file.name,
+      altText:    '',
+      uploadedAt: new Date().toISOString(),
+      image: { _type: 'image', asset: { _type: 'reference', _ref: asset._id } }
+    };
+    if (catId) doc.category = { _type: 'reference', _ref: catId };
+    await sMutate([{ create: doc }]);
+
+    clearInterval(ticker);
+    fill.style.width = '100%'; fill.style.background = 'var(--ok)';
+    status.className = 'up-status ok'; status.textContent = '✓ Saved';
+    toast(`"${file.name}" uploaded.`, 'success');
+  } catch (err) {
+    clearInterval(ticker);
+    fill.style.width = '100%'; fill.style.background = 'var(--danger)';
+    status.className = 'up-status err'; status.textContent = '✕ Failed';
+    toast(`Upload failed: ${err.message}`, 'error', 7000);
+  }
+  URL.revokeObjectURL(prev);
+}
+
+/* ────────────────────────────────────────────
+   LIGHTBOX
+   ──────────────────────────────────────────── */
+function openLightbox(id) {
+  const img = S.images.find(i => i._id === id);
+  if (!img) return;
+  const full = img.mimeType === 'image/svg+xml' ? img.assetUrl : img.assetUrl + '?auto=format&q=90';
+  el('lb-img').src = full;
+  el('lb-name').textContent  = img.title || img.origName || 'Untitled';
+  el('lb-cat').textContent   = img.category ? img.category.name : '';
+  el('lb-dims').textContent  = img.width && img.height ? `${img.width}×${img.height}` : '';
+  el('lb-date').textContent  = fmtDate(img.uploadedAt);
+  el('lb-dl').href     = img.assetUrl || '';
+  el('lb-dl').download = img.title || 'image';
+  el('lb-del').onclick = () => { closeLightbox(); confirmDel(img._id, img.title || img.origName || 'this image'); };
+  el('lightbox').classList.add('open');
+}
+function closeLightbox() { el('lightbox').classList.remove('open'); }
+
+/* ────────────────────────────────────────────
+   DELETE
+   ──────────────────────────────────────────── */
+function confirmDel(docId, name) {
+  el('cdlg-title').textContent = 'Delete Image?';
+  el('cdlg-msg').textContent   = `"${name}" will be permanently removed from Sanity. This cannot be undone.`;
+  el('cdlg-ok').onclick = () => delImage(docId);
+  openModal('confirm-dlg');
+}
+
+async function delImage(docId) {
+  closeModal('confirm-dlg');
+  const img  = S.images.find(i => i._id === docId);
+  const muts = [{ delete: { id: docId } }];
+  if (img && img.assetId) muts.push({ delete: { id: img.assetId } });
+  try {
+    await sMutate(muts);
+    S.images = S.images.filter(i => i._id !== docId);
+    toast('Image deleted.', 'success');
+    renderAll();
+  } catch (err) {
+    toast(`Delete failed: ${err.message}`, 'error');
+  }
+}
+
+/* ────────────────────────────────────────────
+   CATEGORIES MODAL
+   ──────────────────────────────────────────── */
+function openCatsModal() {
+  el('cat-name').value = '';
+  el('cat-slug').value = '';
+  renderCatsTable();
+  openModal('cats-modal');
+}
+
+function renderCatsTable() {
+  const c = el('cats-table');
+  if (!S.categories.length) {
+    c.innerHTML = `<div class="empty-state" style="padding:32px 0">
+      <div class="empty-title">No categories yet</div>
+      <div class="empty-sub">Create one above to start organizing images.</div>
+    </div>`;
+    return;
+  }
+  c.innerHTML = `<div class="cat-table">
+    <div class="cat-th"><span>Name</span><span>Slug</span><span>Images</span><span>Actions</span></div>
+    ${S.categories.map(c2 => catRow(c2)).join('')}
+  </div>`;
+}
+
+function catRow(c) {
+  return `<div class="cat-row" id="cr-${c._id}">
+    <div class="cat-row-name">${esc(c.name)}</div>
+    <div class="cat-row-slug">${esc(c.slug||'')}</div>
+    <div class="cat-row-cnt">${c.imageCount||0}</div>
+    <div class="cat-row-acts">
+      <button class="icon-btn" onclick="startEditCat('${c._id}')" title="Edit">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+      </button>
+      <button class="icon-btn" style="color:var(--danger)" onclick="deleteCat('${c._id}',${c.imageCount||0})" title="Delete">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+      </button>
+    </div>
+  </div>`;
+}
+
+function startEditCat(id) {
+  const c   = S.categories.find(x => x._id === id);
+  if (!c) return;
+  const row = el('cr-' + id);
+  if (!row) return;
+  row.outerHTML = `<div class="cat-edit-row" id="cr-${id}">
+    <input type="text" class="finput" id="en-${id}" value="${esc(c.name)}" style="height:30px;font-size:12px">
+    <input type="text" class="finput" id="es-${id}" value="${esc(c.slug||'')}" style="height:30px;font-size:12px">
+    <div></div>
+    <div style="display:flex;gap:4px">
+      <button class="btn btn-primary" style="height:30px;font-size:12px;padding:0 10px" onclick="saveEditCat('${id}')">Save</button>
+      <button class="btn btn-ghost"   style="height:30px;font-size:12px;padding:0 10px" onclick="renderCatsTable()">✕</button>
+    </div>
+  </div>`;
+}
+
+async function saveEditCat(id) {
+  const name = el('en-'+id).value.trim();
+  const slug = el('es-'+id).value.trim() || slugify(name);
+  if (!name) return;
+  try {
+    await sMutate([{ patch: { id, set: { name, 'slug.current': slug } } }]);
+    const c = S.categories.find(x => x._id === id);
+    if (c) { c.name = name; c.slug = slug; }
+    S.images.forEach(i => { if (i.category && i.category._id === id) { i.category.name = name; i.category.slug = slug; } });
+    toast(`Category "${name}" updated.`, 'success');
+    renderCatsTable();
+    renderAll();
+  } catch (err) {
+    toast(`Update failed: ${err.message}`, 'error');
+  }
+}
+
+async function createCat() {
+  const name = el('cat-name').value.trim();
+  const slug = el('cat-slug').value.trim() || slugify(name);
+  if (!name) { toast('Please enter a category name.', 'warn'); return; }
+  try {
+    const res  = await sMutate([{ create: { _type:'imageCategory', name, slug: { _type:'slug', current:slug } } }]);
+    const newId = res.results[0].id;
+    S.categories.push({ _id:newId, name, slug, imageCount:0 });
+    S.categories.sort((a,b) => a.name.localeCompare(b.name));
+    el('cat-name').value = '';
+    el('cat-slug').value = '';
+    toast(`"${name}" created.`, 'success');
+    renderCatsTable();
+    renderAll();
+  } catch (err) {
+    toast(`Create failed: ${err.message}`, 'error');
+  }
+}
+
+async function deleteCat(id, cnt) {
+  if (cnt > 0) { toast(`Cannot delete — ${cnt} image${cnt!==1?'s':''} use this category. Move or delete them first.`, 'warn', 5000); return; }
+  try {
+    await sMutate([{ delete: { id } }]);
+    S.categories = S.categories.filter(c => c._id !== id);
+    toast('Category deleted.', 'success');
+    renderCatsTable();
+    renderAll();
+  } catch (err) {
+    toast(`Delete failed: ${err.message}`, 'error');
+  }
+}
+
+function autoSlug(inp) {
+  el('cat-slug').value = slugify(inp.value);
+}
+
+/* ────────────────────────────────────────────
+   TOASTS
+   ──────────────────────────────────────────── */
+function toast(msg, type = 'info', ms = 4000) {
+  const tc = el('toast-container');
+  const t  = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<div class="toast-dot"></div><div class="toast-msg">${esc(msg)}</div>
+    <button class="toast-x" onclick="rmToast(this.parentElement)" aria-label="Dismiss">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </button>`;
+  tc.appendChild(t);
+  setTimeout(() => rmToast(t), ms);
+}
+function rmToast(t) {
+  if (!t || !t.parentElement) return;
+  t.classList.add('removing');
+  setTimeout(() => t.remove(), 200);
+}
+
+/* ────────────────────────────────────────────
+   SEED DEFAULT CATEGORIES (if none exist)
+   ──────────────────────────────────────────── */
+async function seedDefaults() {
+  const defaults = ['Homepage','Hero','Communities','Team','Blog','Testimonials','General'];
+  toast('Creating default categories…', 'info');
+  try {
+    await sMutate(defaults.map(name => ({
+      create: { _type:'imageCategory', name, slug: { _type:'slug', current:slugify(name) } }
+    })));
+    await loadData();
+    toast('Default categories created.', 'success');
+  } catch (err) {
+    toast(`Could not seed categories: ${err.message}`, 'error');
+  }
+}
+
+/* ────────────────────────────────────────────
+   HELPERS
+   ──────────────────────────────────────────── */
+function el(id) { return document.getElementById(id); }
+
+/* ────────────────────────────────────────────
+   EVENTS
+   ──────────────────────────────────────────── */
+function wire() {
+  /* search */
+  let t;
+  el('search-input').addEventListener('input', e => {
+    clearTimeout(t);
+    t = setTimeout(() => { S.filter.search = e.target.value.trim(); renderGallery(); }, 200);
+  });
+
+  /* sort menu */
+  document.querySelectorAll('#sort-menu .dd-item').forEach(b => {
+    b.addEventListener('click', () => setSort(b.dataset.sort));
+  });
+
+  /* close dropdowns */
+  document.addEventListener('click', e => { if (!e.target.closest('.dropdown')) closeAllDD(); });
+
+  /* drag-drop */
+  const dz = el('drop-zone');
+  dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', ()   => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); });
+  dz.addEventListener('click', () => el('file-input').click());
+
+  /* file browse */
+  el('file-input').addEventListener('change', e => { if (e.target.files.length) handleFiles(e.target.files); });
+
+  /* lightbox close on backdrop */
+  el('lightbox').addEventListener('click', e => { if (e.target === e.currentTarget) closeLightbox(); });
+
+  /* card click → lightbox */
+  el('g-container').addEventListener('click', e => {
+    const card = e.target.closest('.img-card');
+    if (!card || e.target.closest('.ov-btn,a,button')) return;
+    openLightbox(card.dataset.id);
+  });
+
+  /* keyboard */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeLightbox();
+      ['upload-modal','cats-modal','confirm-dlg'].forEach(closeModal);
+    }
+    if (!e.target.matches('input,textarea,select')) {
+      if (e.key === 'u') openUploadModal();
+      if (e.key === 'c') openCatsModal();
+    }
+  });
+}
+
+/* ────────────────────────────────────────────
+   INIT
+   ──────────────────────────────────────────── */
+async function init() {
+  wire();
+  await loadData();
+  /* offer to seed default categories if project is empty */
+  if (!S.loading && S.categories.length === 0) {
+    setTimeout(() => {
+      const b = document.createElement('button');
+      b.className = 'btn btn-secondary';
+      b.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:60;box-shadow:var(--shadow-lg)';
+      b.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> Create default categories`;
+      b.onclick = () => { b.remove(); seedDefaults(); };
+      document.body.appendChild(b);
+      setTimeout(() => b.remove(), 8000);
+    }, 1000);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
