@@ -323,6 +323,14 @@
       background-repeat:no-repeat;background-position:right 10px center;padding-right:32px;
     }
     .fselect:focus { border-color:var(--accent); }
+    .ftextarea {
+      width:100%;background:var(--bg);border:1px solid var(--border);
+      border-radius:var(--r-sm);color:var(--text-1);padding:8px 12px;
+      font-size:13px;outline:none;transition:border-color .15s;resize:vertical;
+      line-height:1.5;min-height:76px;
+    }
+    .ftextarea:focus { border-color:var(--accent); }
+    .ftextarea::placeholder { color:var(--text-3); }
 
     /* ─── UPLOAD ─── */
     .drop-zone {
@@ -612,6 +620,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
         Download
       </a>
+      <button class="btn btn-secondary" id="lb-edit">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        Edit
+      </button>
       <button class="btn btn-danger" id="lb-del">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
         Delete
@@ -633,6 +645,52 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('confirm-dlg')">Cancel</button>
       <button class="btn btn-danger" id="cdlg-ok">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ EDIT IMAGE MODAL ═══════════════ -->
+<div class="modal-backdrop" id="edit-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hd">
+      <h2>Edit Image</h2>
+      <button class="modal-x" onclick="closeModal('edit-modal')" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:14px;margin-bottom:20px;align-items:flex-start">
+        <img id="edit-thumb" src="" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:var(--r-sm);background:var(--raised);flex-shrink:0;border:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div id="edit-origname" style="font-size:13px;font-weight:500;color:var(--text-1);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+          <div id="edit-meta" style="font-size:11px;color:var(--text-3);line-height:1.6"></div>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="flabel" for="edit-title">Title / Filename</label>
+        <input type="text" id="edit-title" class="finput" placeholder="Image title…">
+      </div>
+      <div class="fg">
+        <label class="flabel" for="edit-alt">Alt Text</label>
+        <input type="text" id="edit-alt" class="finput" placeholder="Describe the image for screen readers…">
+      </div>
+      <div class="fg">
+        <label class="flabel" for="edit-desc">Description</label>
+        <textarea id="edit-desc" class="ftextarea" rows="3" placeholder="Optional notes or description…"></textarea>
+      </div>
+      <div class="fg" style="margin-bottom:0">
+        <label class="flabel" for="edit-cat">Category</label>
+        <select id="edit-cat" class="fselect">
+          <option value="">— No category —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('edit-modal')">Cancel</button>
+      <button class="btn btn-primary" id="edit-save-btn" onclick="saveEditChanges()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        Save Changes
+      </button>
     </div>
   </div>
 </div>
@@ -682,7 +740,7 @@ const CFG = {
   projectId:  '6thfwh73',
   dataset:    'production',
   apiVersion: '2021-06-07',
-  token:      localStorage.getItem('sanity_token') || ''
+  token:      'sksLD9G2kXWsmmyhLIcFQfAuA7F3tlV22FWC99pvX9xwHAIuB9cjHdIFW2C6DuR2kS7tyfzvqPYTuV7cwPXr7X6cPXFyYIMLapJHDXX0cdkK3IMB3CFu7OtEtaSqE0m2ou886OOWAchiSufEZxdGq6EXx10jFKJAU1H6C2DBel8Nekb61Fas'
 };
 const API = `https://${CFG.projectId}.api.sanity.io/v${CFG.apiVersion}`;
 
@@ -724,7 +782,7 @@ async function sUploadAsset(file) {
    GROQ
    ──────────────────────────────────────────── */
 const Q_IMAGES = `*[_type=="galleryImage"] | order(uploadedAt desc) {
-  _id, title, altText, uploadedAt,
+  _id, title, altText, description, uploadedAt,
   "assetId": image.asset->_id,
   "assetUrl": image.asset->url,
   "width":  image.asset->metadata.dimensions.width,
@@ -846,20 +904,21 @@ function card(img) {
   const tb   = thumbUrl(img);
   const dims = img.width && img.height ? `${img.width}×${img.height}` : '';
   const name = esc(img.title || img.origName || 'Untitled');
-  const safeId = esc(img._id);
-  const safeTitle = esc(img.title || img.origName || 'this image');
 
-  return `<div class="img-card" data-id="${safeId}">
+  return `<div class="img-card" data-id="${img._id}">
     <div class="card-media">
       <img src="${esc(tb)}" alt="${esc(img.altText||img.title||'')}" loading="lazy">
       <div class="card-overlay">
-        <button class="ov-btn" onclick="event.stopPropagation();openLightbox('${safeId}')" title="Preview">
+        <button class="ov-btn" data-action="preview" title="Preview">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
         </button>
-        <a class="ov-btn" href="${esc(img.assetUrl||'')}" download="${name}" onclick="event.stopPropagation()" title="Download">
+        <button class="ov-btn" data-action="edit" title="Edit">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </button>
+        <a class="ov-btn" href="${esc(img.assetUrl||'')}" download="${name}" data-action="download" title="Download">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
         </a>
-        <button class="ov-btn del" onclick="event.stopPropagation();confirmDel('${safeId}','${safeTitle}')" title="Delete">
+        <button class="ov-btn del" data-action="delete" title="Delete">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
         </button>
       </div>
@@ -1064,7 +1123,8 @@ function openLightbox(id) {
   el('lb-date').textContent  = fmtDate(img.uploadedAt);
   el('lb-dl').href     = img.assetUrl || '';
   el('lb-dl').download = img.title || 'image';
-  el('lb-del').onclick = () => { closeLightbox(); confirmDel(img._id, img.title || img.origName || 'this image'); };
+  el('lb-edit').onclick = () => { closeLightbox(); openEditModal(img._id); };
+  el('lb-del').onclick  = () => { closeLightbox(); confirmDel(img._id); };
   el('lightbox').classList.add('open');
 }
 function closeLightbox() { el('lightbox').classList.remove('open'); }
@@ -1072,7 +1132,9 @@ function closeLightbox() { el('lightbox').classList.remove('open'); }
 /* ────────────────────────────────────────────
    DELETE
    ──────────────────────────────────────────── */
-function confirmDel(docId, name) {
+function confirmDel(docId) {
+  const img  = S.images.find(i => i._id === docId);
+  const name = img ? (img.title || img.origName || 'this image') : 'this image';
   el('cdlg-title').textContent = 'Delete Image?';
   el('cdlg-msg').textContent   = `"${name}" will be permanently removed from Sanity. This cannot be undone.`;
   el('cdlg-ok').onclick = () => delImage(docId);
@@ -1278,18 +1340,26 @@ function wire() {
   /* lightbox close on backdrop */
   el('lightbox').addEventListener('click', e => { if (e.target === e.currentTarget) closeLightbox(); });
 
-  /* card click → lightbox */
+  /* card click → actions via data-action */
   el('g-container').addEventListener('click', e => {
     const card = e.target.closest('.img-card');
-    if (!card || e.target.closest('.ov-btn,a,button')) return;
-    openLightbox(card.dataset.id);
+    if (!card) return;
+    const id  = card.dataset.id;
+    const btn = e.target.closest('[data-action]');
+    if (!btn) { openLightbox(id); return; }
+    e.stopPropagation();
+    const act = btn.dataset.action;
+    if (act === 'preview') openLightbox(id);
+    else if (act === 'edit')   openEditModal(id);
+    else if (act === 'delete') confirmDel(id);
+    /* download: native <a> behavior, no JS needed */
   });
 
   /* keyboard */
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
       closeLightbox();
-      ['upload-modal','cats-modal','confirm-dlg','setup-modal'].forEach(closeModal);
+      ['upload-modal','cats-modal','confirm-dlg','setup-modal','edit-modal'].forEach(closeModal);
     }
     if (!e.target.matches('input,textarea,select')) {
       if (e.key === 'u') openUploadModal();
@@ -1301,6 +1371,80 @@ function wire() {
 /* ────────────────────────────────────────────
    INIT
    ──────────────────────────────────────────── */
+/* ────────────────────────────────────────────
+   EDIT IMAGE MODAL
+   ──────────────────────────────────────────── */
+let _editId = null;
+
+function openEditModal(id) {
+  const img = S.images.find(i => i._id === id);
+  if (!img) return;
+  _editId = id;
+
+  el('edit-thumb').src      = thumbUrl(img) || '';
+  el('edit-origname').textContent = img.origName || img.title || '';
+  el('edit-meta').textContent = [
+    img.width && img.height ? `${img.width}×${img.height}` : '',
+    img.filesize ? fmtBytes(img.filesize) : '',
+    fmtDate(img.uploadedAt)
+  ].filter(Boolean).join(' · ');
+
+  el('edit-title').value = img.title || img.origName || '';
+  el('edit-alt').value   = img.altText || '';
+  el('edit-desc').value  = img.description || '';
+
+  const sel = el('edit-cat');
+  sel.innerHTML = '<option value="">— No category —</option>' +
+    S.categories.map(c =>
+      `<option value="${c._id}"${img.category && img.category._id === c._id ? ' selected' : ''}>${esc(c.name)}</option>`
+    ).join('');
+
+  const btn = el('edit-save-btn');
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Save Changes`;
+
+  openModal('edit-modal');
+}
+
+async function saveEditChanges() {
+  if (!_editId) return;
+  const title = el('edit-title').value.trim();
+  const alt   = el('edit-alt').value.trim();
+  const desc  = el('edit-desc').value.trim();
+  const catId = el('edit-cat').value;
+
+  const btn = el('edit-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  const setFields = { title, altText: alt, description: desc };
+  const mutations = [{ patch: { id: _editId, set: setFields } }];
+
+  if (catId) {
+    mutations[0].patch.set.category = { _type: 'reference', _ref: catId };
+  } else {
+    mutations[0].patch.unset = ['category'];
+  }
+
+  try {
+    await sMutate(mutations);
+    const img = S.images.find(i => i._id === _editId);
+    if (img) {
+      img.title       = title;
+      img.altText     = alt;
+      img.description = desc;
+      img.category    = catId ? (S.categories.find(c => c._id === catId) || null) : null;
+    }
+    closeModal('edit-modal');
+    toast('Image updated.', 'success');
+    renderAll();
+  } catch (err) {
+    toast(`Save failed: ${err.message}`, 'error');
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> Save Changes`;
+  }
+}
+
 function showSetupModal() {
   const hasToken = !!localStorage.getItem('sanity_token');
   el('setup-close-btn').style.display      = hasToken ? '' : 'none';
@@ -1329,11 +1473,6 @@ function disconnectSanity() {
 
 async function init() {
   wire();
-  CFG.token = localStorage.getItem('sanity_token') || '';
-  if (!CFG.token) {
-    showSetupModal();
-    return;
-  }
   await loadData();
   /* offer to seed default categories if project is empty */
   if (!S.loading && S.categories.length === 0) {
