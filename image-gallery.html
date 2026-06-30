@@ -1143,11 +1143,14 @@ function confirmDel(docId) {
 
 async function delImage(docId) {
   closeModal('confirm-dlg');
-  const img  = S.images.find(i => i._id === docId);
-  const muts = [{ delete: { id: docId } }];
-  if (img && img.assetId) muts.push({ delete: { id: img.assetId } });
+  const img = S.images.find(i => i._id === docId);
   try {
-    await sMutate(muts);
+    await sMutate([{ delete: { id: docId } }]);
+    if (img && img.assetId) {
+      try {
+        await sMutate([{ delete: { id: img.assetId } }]);
+      } catch (_) { /* asset may still be referenced elsewhere — skip */ }
+    }
     S.images = S.images.filter(i => i._id !== docId);
     toast('Image deleted.', 'success');
     renderAll();
