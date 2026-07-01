@@ -435,6 +435,19 @@
       display:flex;align-items:flex-start;gap:8px;margin-bottom:12px;
     }
 
+    /* ─── MOBILE FAB (upload) ─── */
+    .mob-fab {
+      display:none;
+      position:fixed;bottom:22px;right:18px;z-index:60;
+      width:52px;height:52px;border-radius:50%;
+      background:var(--accent);color:#0d0d10;border:none;cursor:pointer;
+      align-items:center;justify-content:center;flex-shrink:0;
+      box-shadow:0 4px 16px rgba(201,169,107,.45),0 8px 32px rgba(0,0,0,.5);
+      transition:transform .15s,box-shadow .15s;
+    }
+    .mob-fab:hover { transform:scale(1.08);box-shadow:0 6px 20px rgba(201,169,107,.55),0 12px 40px rgba(0,0,0,.5); }
+    .mob-fab:active { transform:scale(.93); }
+
     /* ─── RESPONSIVE ─── */
     @media(max-width:768px) {
       #sidebar { display:none; }
@@ -445,6 +458,23 @@
       .stat-val { font-size:18px; }
       .tb-search { max-width:160px; }
       .tb-right .btn span { display:none; }
+    }
+
+    @media(max-width:480px) {
+      /* Toolbar: search drops to second row so it gets full width */
+      .toolbar { flex-wrap:wrap;height:auto;padding:8px 12px;row-gap:8px; }
+      .tb-search { order:10;flex:1 0 100%;max-width:none; }
+      /* Show only "Image Gallery" in breadcrumb */
+      .breadcrumb span:not(.bc-cur) { display:none; }
+      .count-badge { display:none; }
+      /* Smaller icon buttons */
+      .tb-right .btn { padding:0 9px;height:34px; }
+      /* Upload button hidden from toolbar — FAB takes over */
+      .tb-upload-btn { display:none; }
+      .mob-fab { display:flex; }
+      /* Stats 2×2 grid */
+      .stats-strip { flex-wrap:wrap; }
+      .stat-card { flex:0 0 calc(50% - 4px); }
     }
   </style>
 </head>
@@ -520,7 +550,7 @@
           <span>Categories</span>
         </button>
 
-        <button class="btn btn-primary" onclick="openUploadModal()">
+        <button class="btn btn-primary tb-upload-btn" onclick="openUploadModal()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
           <span>Upload Images</span>
         </button>
@@ -1493,5 +1523,11 @@ async function init() {
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
+
+<!-- MOBILE UPLOAD FAB -->
+<button class="mob-fab" onclick="openUploadModal()" aria-label="Upload images" title="Upload Images">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+</button>
+
 </body>
 </html>
